@@ -63,6 +63,9 @@ public:
 		// currently Backward Differences are used for gradient computation
 		// http://en.wikipedia.org/wiki/Finite_difference
 		
+		//					(f(x + 1) - f(x - 1))
+		// f(x,y,z) = 0.5 * (f(y + 1) - f(y - 1))
+		//					(f(z + 1) - f(z - 1))
 		OutputVoxel.Set(0, 0.5f * (PlusVoxelX-MinusVoxelX).Get(0));
 		OutputVoxel.Set(1, 0.5f * (PlusVoxelY-MinusVoxelY).Get(0));
 		OutputVoxel.Set(2, 0.5f * (PlusVoxelZ-MinusVoxelZ).Get(0));
@@ -99,7 +102,8 @@ public:
 		// TODO 2: Gradient by Sobel Filter
 		// Implement gradient computation using the Sobel operator
 		// http://en.wikipedia.org/wiki/Sobel_operator
-//z-Filterkernel: (x columns / y rows)
+		
+		//z-Filterkernel: (x columns / y rows)
 		// -1 -2 -1		0 0 0	1 2 1
 		// -2 -4 -2		0 0 0	2 4 2
 		// -1 -2 -1		0 0 0	1 2 1
