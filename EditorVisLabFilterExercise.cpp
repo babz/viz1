@@ -614,24 +614,33 @@ void EditorVisLabFilterExercise::computeConvolution(const Volume<ElementType,N> 
 			unsigned int uVoxelZ = uBlockZ+voxelIter.GetPositionZ();
 
 			float fConvoluted = 0.0f;
+			
+			int offset_slices = (-1)*((kernel_size_slices - 1)/2);
 
-			int offset_columns = (-1)*((kernel_size_columns - 1)/2);
-
-			for (int j = 0; j < kernel_size_columns; j++)
+			for (int k = 0; k < kernel_size_slices; k++)
 			{
-				int offset_rows = (-1)*((kernel_size_rows - 1)/2);
+				int offset_columns = (-1)*((kernel_size_columns - 1)/2);
 
-				for (int i = 0; i < kernel_size_rows; i++)
+				for (int j = 0; j < kernel_size_columns; j++)
 				{
-					Voxel<float,1> voxValue = voxelIter.GetNeighbor(offset_rows,offset_columns,0);
-					float signal_value = voxValue.Get(0);
+					int offset_rows = (-1)*((kernel_size_rows - 1)/2);
 
-					int linear_index = j*(kernel_size_rows) + i;
-					fConvoluted = fConvoluted + signal_value * m_vecConvolutionKernel[linear_index];
-					offset_rows = offset_rows + 1;
+					for (int i = 0; i < kernel_size_rows; i++)
+					{
+					//	Voxel<float,1> voxValue = voxelIter.GetNeighbor(offset_rows,offset_columns,0);
+						Voxel<float,1> voxValue = voxelIter.GetNeighbor(offset_rows,offset_columns,offset_slices);
+						float signal_value = voxValue.Get(0);
+
+//						int linear_index = j*(kernel_size_rows) + i;
+						int linear_index = k*(kernel_size_slices) + j*(kernel_size_rows) + i;
+						fConvoluted = fConvoluted + signal_value * m_vecConvolutionKernel[linear_index];
+						offset_rows = offset_rows + 1;
+					}
+
+					offset_columns = offset_columns + 1;
 				}
 
-				offset_columns = offset_columns + 1;
+				offset_slices = offset_slices + 1;
 			}
 
 			manip.SetPosition(uVoxelX,uVoxelY,uVoxelZ);
