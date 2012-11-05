@@ -1,5 +1,5 @@
 // Copyright (C) 2011 vis-group. All Rights Reserved.
-
+#define _USE_MATH_DEFINES
 
 #include "EditorVislabFilterExercise.h"
 #include "vrc_plugin_editor_vislabfilterexercise.cpp"
@@ -778,6 +778,7 @@ void EditorVisLabFilterExercise::computeGaussianKernel(float fSigma, int iWidth,
 				float temp = exp(-((x_offset*x_offset)/(2*fSigma*fSigma) + (y_offset*y_offset)/(2*fSigma*fSigma) + (z_offset*z_offset)/(2*fSigma*fSigma)));
 				float temp2 = sqrt(2*M_PI)*fSigma;
 				temp = temp / (temp2*temp2*temp2);
+				
 				m_vecConvolutionKernel[linear_index] = temp;
 
 				// END TODO 5
