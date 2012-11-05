@@ -632,7 +632,7 @@ void EditorVisLabFilterExercise::computeConvolution(const Volume<ElementType,N> 
 						float signal_value = voxValue.Get(0);
 
 //						int linear_index = j*(kernel_size_rows) + i;
-						int linear_index = k*(kernel_size_slices) + j*(kernel_size_rows) + i;
+						int linear_index = k*(kernel_size_columns*kernel_size_rows) + j*(kernel_size_rows) + i;
 						fConvoluted = fConvoluted + signal_value * m_vecConvolutionKernel[linear_index];
 						offset_rows = offset_rows + 1;
 					}
@@ -774,8 +774,12 @@ void EditorVisLabFilterExercise::computeGaussianKernel(float fSigma, int iWidth,
 				// http://en.wikipedia.org/wiki/Gaussian_filter
 				// 3d gaussian function
 
-				m_vecConvolutionKernel[linear_index] = 1;
-				
+				//m_vecConvolutionKernel[linear_index] = 1;
+				float temp = exp(-((x_offset*x_offset)/(2*fSigma*fSigma) + (y_offset*y_offset)/(2*fSigma*fSigma) + (z_offset*z_offset)/(2*fSigma*fSigma)));
+				float temp2 = sqrt(2*M_PI)*fSigma;
+				temp = temp / (temp2*temp2*temp2);
+				m_vecConvolutionKernel[linear_index] = temp;
+
 				// END TODO 5
 
 				norm_sum = norm_sum + m_vecConvolutionKernel[linear_index];
