@@ -737,7 +737,10 @@ void EditorVisLabFilterExercise::computeGaussianKernel( float fSigma )
 	// TODO 4: Compute the correct minimum size of the Gaussian smoothing filter kernel
 	// gaussian kernel is (6*sigma - 1) in one dimension
 	// http://en.wikipedia.org/wiki/Gaussian_filter
-	int iKernelWidth = 3;
+
+	//int iKernelWidth = 3;
+	int iKernelWidth = 6*fSigma - 1;
+
 	// END TODO 4
 
 	// we make it alway at least 3x3x3 size
@@ -770,7 +773,9 @@ void EditorVisLabFilterExercise::computeGaussianKernel(float fSigma, int iWidth,
 				// TODO 5: Fill a Gaussian kernel with real values
 				// http://en.wikipedia.org/wiki/Gaussian_filter
 				// 3d gaussian function
+
 				m_vecConvolutionKernel[linear_index] = 1;
+				
 				// END TODO 5
 
 				norm_sum = norm_sum + m_vecConvolutionKernel[linear_index];
