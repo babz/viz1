@@ -1,4 +1,5 @@
 // Copyright (C) 2011 vis-group. All Rights Reserved.
+
 #define _USE_MATH_DEFINES
 
 #include "EditorVislabFilterExercise.h"
@@ -627,7 +628,7 @@ void EditorVisLabFilterExercise::computeConvolution(const Volume<ElementType,N> 
 
 					for (int i = 0; i < kernel_size_rows; i++)
 					{
-					//	Voxel<float,1> voxValue = voxelIter.GetNeighbor(offset_rows,offset_columns,0);
+//						Voxel<float,1> voxValue = voxelIter.GetNeighbor(offset_rows,offset_columns,0);
 						Voxel<float,1> voxValue = voxelIter.GetNeighbor(offset_rows,offset_columns,offset_slices);
 						float signal_value = voxValue.Get(0);
 
@@ -674,6 +675,100 @@ void EditorVisLabFilterExercise::computeConvolution(const Volume<ElementType,N> 
 template <class ElementType,unsigned int N>
 void EditorVisLabFilterExercise::computeBilateral(const Volume<ElementType,N> & volVolume, 	float fSigmaR)
 {
+	Volume<ElementType,N> volSrc = volVolume;
+
+	Volume<ElementType,N>::BlockIterator blockIter(volSrc);
+	Volume<float,4>::LinearManipulator manip(m_volFilter);
+	
+	int size_rows = volSrc.GetWidth();
+	int size_columns = volSrc.GetHeight();
+	int size_slices = volSrc.GetDepth();
+
+	unsigned int uVoxelCount = volSrc.GetWidth()*volSrc.GetHeight()*volSrc.GetDepth();
+	unsigned int uVoxelIndex = 0;
+
+	// maybe should be member of class
+	int kernel_size_rows = m_iKernelWidth;
+	int kernel_size_columns = m_iKernelHeight;
+	int kernel_size_slices = m_iKernelDepth;
+
+	///Do convolution in X, Y and Z direction
+	while (!blockIter.IsAtEnd())
+	{
+		unsigned int uBlockX = blockIter.GetPositionX()*BLOCKDIMENSION;
+		unsigned int uBlockY = blockIter.GetPositionY()*BLOCKDIMENSION;
+		unsigned int uBlockZ = blockIter.GetPositionZ()*BLOCKDIMENSION;
+
+		Volume<ElementType,N>::BlockLinearIterator voxelIter(blockIter);
+
+		while (!voxelIter.IsAtEnd())
+		{
+			unsigned int uVoxelX = uBlockX+voxelIter.GetPositionX();
+			unsigned int uVoxelY = uBlockY+voxelIter.GetPositionY();
+			unsigned int uVoxelZ = uBlockZ+voxelIter.GetPositionZ();
+
+			float fConvolutedNumerator = 0.0f;
+			float fConvolutedDenominator = 0.0f; 
+			
+			int offset_slices = (-1)*((kernel_size_slices - 1)/2);
+
+			for (int k = 0; k < kernel_size_slices; k++)
+			{
+				int offset_columns = (-1)*((kernel_size_columns - 1)/2);
+
+				for (int j = 0; j < kernel_size_columns; j++)
+				{
+					int offset_rows = (-1)*((kernel_size_rows - 1)/2);
+
+					for (int i = 0; i < kernel_size_rows; i++)
+					{
+						//float signal_value = voxelIter.GetNeighbor(offset_rows,offset_columns,offset_slices).Get(0);
+						
+						Voxel<float,1> tmp_inv = voxelIter.GetNeighbor(-offset_rows,-offset_columns,-offset_slices);
+						float inv_signal_value = tmp_inv.Get(0);
+						
+						Voxel<float,1> tmp_voxel = voxelIter.GetNeighbor(0,0,0);
+						float voxel_value = tmp_voxel.Get(0);
+						
+						int linear_index = k*(kernel_size_columns*kernel_size_rows) + j*(kernel_size_rows) + i;
+						
+						//fConvoluted = fConvoluted + signal_value * m_vecConvolutionKernel[linear_index];
+						float rangeExpression = exp(-(((inv_signal_value-voxel_value)*(inv_signal_value-voxel_value))/(2*fSigmaR*fSigmaR)));
+						
+						fConvolutedNumerator = fConvolutedNumerator + m_vecConvolutionKernel[linear_index]*rangeExpression*inv_signal_value;
+						fConvolutedDenominator = fConvolutedDenominator + m_vecConvolutionKernel[linear_index]*rangeExpression;
+						
+						offset_rows = offset_rows + 1;
+					}
+
+					offset_columns = offset_columns + 1;
+				}
+
+				offset_slices = offset_slices + 1;
+			}
+
+			manip.SetPosition(uVoxelX,uVoxelY,uVoxelZ);
+
+			Voxel<float,4> voxel = manip.Get();
+			voxel.Set(3,fabsf(fConvolutedNumerator/fConvolutedDenominator));
+			manip.Set(voxel);
+
+			++uVoxelIndex;
+			++voxelIter;
+		}
+
+		// set new normalized progress
+		m_fProgress = float(uVoxelIndex)/float(uVoxelCount);
+		QMetaObject::invokeMethod(this,"computationProgress",Qt::QueuedConnection);
+
+		if (m_bAbortComputation)
+			break;
+
+		++blockIter;
+	}
+
+	//m_fBilateralSigmaD
+
 }
 // END TODO BONUS
 
@@ -774,13 +869,14 @@ void EditorVisLabFilterExercise::computeGaussianKernel(float fSigma, int iWidth,
 				// http://en.wikipedia.org/wiki/Gaussian_filter
 				// 3d gaussian function
 
-				//m_vecConvolutionKernel[linear_index] = 1;
-				float temp = exp(-((x_offset*x_offset)/(2*fSigma*fSigma) + (y_offset*y_offset)/(2*fSigma*fSigma) + (z_offset*z_offset)/(2*fSigma*fSigma)));
+				//float temp = exp(-(x.*x/2/sig(1)^2 + y.*y/2/sig(2)^2 + z.*z/2/sig(3)^2));
+				
+				float temp = exp(-(x_offset*x_offset/(2*fSigma*fSigma) + y_offset*y_offset/(2*fSigma*fSigma) + z_offset*z_offset/(2*fSigma*fSigma)));
 				float temp2 = sqrt(2*M_PI)*fSigma;
 				temp = temp / (temp2*temp2*temp2);
 				
 				m_vecConvolutionKernel[linear_index] = temp;
-
+				
 				// END TODO 5
 
 				norm_sum = norm_sum + m_vecConvolutionKernel[linear_index];
